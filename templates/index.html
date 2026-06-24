@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Despesas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #0d0e10; --surface: #13151a; --surface2: #1a1d24;
+    --border: #252830; --border2: #2e3240;
+    --accent: #4ade80; --accent-dim: rgba(74,222,128,0.12); --accent-mid: #22c55e;
+    --danger: #f87171; --danger-dim: rgba(248,113,113,0.1);
+    --text: #e2e4ea; --text2: #9ca3af; --text3: #6b7280;
+  }
+  * , *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Geist', sans-serif; font-size: 15px; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; padding-bottom: 60px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); background: var(--surface); flex-wrap: wrap; gap: 12px; }
+  header h1 { font-size: 20px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+  header h1 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .btn-export {
+    background: transparent; border: 1.5px solid var(--border2); color: var(--text2);
+    border-radius: 8px; padding: 9px 16px; font-size: 13px; font-family: 'JetBrains Mono', monospace;
+    text-decoration: none; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-export:hover { background: var(--border); color: var(--text); }
+
+  main { max-width: 920px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; }
+
+  .form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .form-group { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+  input[type=text], input[type=number], input[type=date], input[type=time], textarea {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 9px 12px; font-size: 14px; color: var(--text); font-family: 'Geist', sans-serif;
+    outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 64px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .chip {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 20px;
+    padding: 6px 14px; font-size: 13px; color: var(--text2); cursor: pointer;
+    transition: all 0.15s; user-select: none;
+  }
+  .chip:hover { border-color: var(--text3); color: var(--text); }
+  .chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  .add-category-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .add-category-row input { flex: 1; }
+  .btn-secondary {
+    background: transparent; border: 1px solid var(--border2); color: var(--text2);
+    border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-secondary:hover { background: var(--border); color: var(--text); }
+
+  .btn-primary {
+    background: var(--accent); color: #000; border: none; border-radius: 8px;
+    padding: 11px 22px; font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: 'Geist', sans-serif; transition: background 0.15s; width: 100%;
+  }
+  .btn-primary:hover { background: var(--accent-mid); }
+
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .summary-bar { display: none; gap: 24px; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text2); }
+  .summary-bar.visible { display: flex; }
+  .summary-bar strong { color: var(--accent); font-size: 14px; }
+
+  .expense-list { display: flex; flex-direction: column; gap: 10px; }
+  .expense-row {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+    transition: border-color 0.15s;
+  }
+  .expense-row:hover { border-color: var(--border2); }
+  .expense-main { flex: 1; min-width: 0; }
+  .expense-title-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .expense-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .expense-datetime { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text3); white-space: nowrap; }
+  .expense-desc { font-size: 13px; color: var(--text2); margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .expense-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .expense-tag { background: var(--accent-dim); border: 1px solid rgba(74,222,128,0.25); color: var(--accent); border-radius: 12px; padding: 2px 9px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+  .expense-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+  .expense-amount { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: #fff; white-space: nowrap; }
+  .btn-delete {
+    background: transparent; border: 1px solid var(--border2); color: var(--text3);
+    border-radius: 6px; padding: 4px 9px; font-size: 11px; cursor: pointer; transition: all 0.15s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .btn-delete:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--text3); font-size: 14px; }
+  .empty-state .emoji { font-size: 32px; margin-bottom: 10px; }
+
+  #toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; }
+  .toast {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 11px 18px; font-size: 13px; color: var(--text); box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    animation: slideIn 0.2s ease; max-width: 320px;
+  }
+  .toast.success { border-color: var(--accent); color: var(--accent); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  .toast.fade-out { animation: fadeOut 0.25s ease forwards; }
+  @keyframes fadeOut { to { opacity: 0; transform: translateX(20px); } }
+
+  @media (max-width: 640px) {
+    header { padding: 16px; }
+    main { padding: 16px; }
+    .expense-row { flex-direction: column; }
+    .expense-side { flex-direction: row; align-items: center; width: 100%; justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot"></span>Despesas</h1>
+  <a href="/api/export/csv" id="export-link" class="btn-export">⬇ Exportar CSV</a>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2>Nova despesa</h2>
+    <form id="expense-form">
+      <div class="form-row">
+        <div class="form-group" style="flex: 2;">
+          <label for="f-title">Título *</label>
+          <input type="text" id="f-title" required>
+        </div>
+        <div class="form-group">
+          <label for="f-amount">Valor (€) *</label>
+          <input type="number" id="f-amount" step="0.01" min="0" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="f-description">Descrição</label>
+          <textarea id="f-description"></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="f-date">Data</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="form-group">
+          <label for="f-time">Hora</label>
+          <input type="time" id="f-time">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>Categorias</label>
+        <div class="chips" id="form-category-chips"></div>
+      </div>
+
+      <div class="add-category-row">
+        <input type="text" id="new-category-input" placeholder="Nova categoria...">
+        <button type="button" class="btn-secondary" id="add-category-btn">+ Adicionar</button>
+      </div>
+
+      <button type="submit" class="btn-primary">Gravar despesa</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Filtrar</h2>
+    <div class="filter-bar" id="filter-bar"></div>
+  </section>
+
+  <div class="summary-bar" id="summary-bar">
+    <div>Total: <strong id="summary-total">0,00 €</strong></div>
+    <div>Nº despesas: <strong id="summary-count">0</strong></div>
+    <div>Média: <strong id="summary-avg">0,00 €</strong></div>
+  </div>
+
+  <section>
+    <div class="expense-list" id="expense-list"></div>
+  </section>
+
+</main>
+
+<div id="toast-wrap"></div>
+
+<script>
+const API = {
+  expenses: '/api/expenses',
+  categories: '/api/categories',
+};
+
+let categories = [];
+let selectedFormCategories = [];
+let activeFilter = null;
+let expenses = [];
+
+function toast(message, type = '') {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = message;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('fade-out');
+    setTimeout(() => el.remove(), 250);
+  }, 2600);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function nowStr() {
+  const d = new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function resetDateTime() {
+  document.getElementById('f-date').value = todayStr();
+  document.getElementById('f-time').value = nowStr();
+}
+
+function formatDateDisplay(isoDate) {
+  if (!isoDate) return '—';
+  const [y, m, d] = isoDate.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function formatEuro(value) {
+  return value.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+async function apiFetch(url, opts = {}) {
+  const res = await fetch(url, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro desconhecido.');
+  return data;
+}
+
+// ── CATEGORIES ───────────────────────────────────────
+async function loadCategories() {
+  categories = await apiFetch(API.categories);
+  renderFormChips();
+  renderFilterBar();
+}
+
+function renderFormChips() {
+  const wrap = document.getElementById('form-category-chips');
+  wrap.innerHTML = '';
+  categories.forEach(cat => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (selectedFormCategories.includes(cat) ? ' active' : '');
+    chip.textContent = cat;
+    chip.addEventListener('click', () => {
+      if (selectedFormCategories.includes(cat)) {
+        selectedFormCategories = selectedFormCategories.filter(c => c !== cat);
+      } else {
+        selectedFormCategories.push(cat);
+      }
+      renderFormChips();
+    });
+    wrap.appendChild(chip);
+  });
+}
+
+function renderFilterBar() {
+  const wrap = document.getElementById('filter-bar');
+  wrap.innerHTML = '';
+
+  const allChip = document.createElement('div');
+  allChip.className = 'chip' + (activeFilter === null ? ' active' : '');
+  allChip.textContent = 'Todas';
+  allChip.addEventListener('click', () => { activeFilter = null; onFilterChange(); });
+  wrap.appendChild(allChip);
+
+  categories.forEach(cat => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (activeFilter === cat ? ' active' : '');
+    chip.textContent = cat;
+    chip.addEventListener('click', () => { activeFilter = cat; onFilterChange(); });
+    wrap.appendChild(chip);
+  });
+}
+
+function onFilterChange() {
+  renderFilterBar();
+  updateExportLink();
+  loadExpenses();
+}
+
+function updateExportLink() {
+  const link = document.getElementById('export-link');
+  link.href = activeFilter
+    ? `/api/export/csv?category=${encodeURIComponent(activeFilter)}`
+    : '/api/export/csv';
+}
+
+async function addCategory() {
+  const input = document.getElementById('new-category-input');
+  const name = input.value.trim();
+  if (!name) return;
+  try {
+    categories = await apiFetch(API.categories, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    input.value = '';
+    selectedFormCategories.push(name);
+    renderFormChips();
+    renderFilterBar();
+    toast(`Categoria "${name}" adicionada.`, 'success');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ── EXPENSES ──────────────────────────────────────────
+async function loadExpenses() {
+  const url = activeFilter
+    ? `${API.expenses}?category=${encodeURIComponent(activeFilter)}`
+    : API.expenses;
+  expenses = await apiFetch(url);
+  renderExpenses();
+  renderSummary();
+}
+
+function renderSummary() {
+  const bar = document.getElementById('summary-bar');
+  if (expenses.length === 0) {
+    bar.classList.remove('visible');
+    return;
+  }
+  bar.classList.add('visible');
+  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  document.getElementById('summary-total').textContent = formatEuro(total);
+  document.getElementById('summary-count').textContent = expenses.length;
+  document.getElementById('summary-avg').textContent = formatEuro(total / expenses.length);
+}
+
+function renderExpenses() {
+  const list = document.getElementById('expense-list');
+  list.innerHTML = '';
+
+  if (expenses.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🧾</div>
+        <div>Ainda não há despesas registadas${activeFilter ? ' nesta categoria' : ''}.</div>
+      </div>`;
+    return;
+  }
+
+  expenses.forEach(e => {
+    const row = document.createElement('div');
+    row.className = 'expense-row';
+    row.innerHTML = `
+      <div class="expense-main">
+        <div class="expense-title-row">
+          <span class="expense-title">${escapeHtml(e.title)}</span>
+          <span class="expense-datetime">${formatDateDisplay(e.date)} · ${e.time || '--:--'}</span>
+        </div>
+        ${e.description ? `<div class="expense-desc">${escapeHtml(e.description)}</div>` : ''}
+        <div class="expense-tags">
+          ${(e.categories || []).map(c => `<span class="expense-tag">${escapeHtml(c)}</span>`).join('')}
+        </div>
+      </div>
+      <div class="expense-side">
+        <div class="expense-amount">${formatEuro(e.amount)}</div>
+        <button class="btn-delete" data-id="${e.id}">✕ apagar</button>
+      </div>`;
+    row.querySelector('.btn-delete').addEventListener('click', () => deleteExpense(e.id));
+    list.appendChild(row);
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Tens a certeza que queres apagar esta despesa?')) return;
+  try {
+    await apiFetch(`${API.expenses}/${id}`, { method: 'DELETE' });
+    toast('Despesa apagada.', 'success');
+    loadExpenses();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ── FORM ──────────────────────────────────────────────
+document.getElementById('expense-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const title = document.getElementById('f-title').value.trim();
+  const amount = document.getElementById('f-amount').value;
+
+  if (!title) { toast('O título é obrigatório.', 'error'); return; }
+  if (amount === '' || isNaN(parseFloat(amount))) { toast('Indica um valor válido.', 'error'); return; }
+
+  const payload = {
+    title,
+    description: document.getElementById('f-description').value.trim(),
+    date: document.getElementById('f-date').value,
+    time: document.getElementById('f-time').value,
+    amount: parseFloat(amount),
+    categories: [...selectedFormCategories],
+  };
+
+  try {
+    await apiFetch(API.expenses, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    toast('Despesa gravada.', 'success');
+    document.getElementById('expense-form').reset();
+    selectedFormCategories = [];
+    renderFormChips();
+    resetDateTime();
+    loadExpenses();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+});
+
+document.getElementById('add-category-btn').addEventListener('click', addCategory);
+document.getElementById('new-category-input').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') { ev.preventDefault(); addCategory(); }
+});
+
+// ── INIT ──────────────────────────────────────────────
+async function init() {
+  resetDateTime();
+  updateExportLink();
+  await loadCategories();
+  await loadExpenses();
+}
+init();
+</script>
+</body>
+</html>
