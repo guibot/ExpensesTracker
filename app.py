@@ -10,7 +10,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EXPENSES_FILE = os.path.join(BASE_DIR, "expenses.json")
 CATEGORIES_FILE = os.path.join(BASE_DIR, "categories.json")
 INDEX_FILE = os.path.join(BASE_DIR, "templates", "index.html")
-DEFAULT_CATEGORIES = ["Casa", "Obras"]
+DEFAULT_CATEGORIES = ["Projecto1", "Projecto2"]
 
 
 def load_json(path, default):
